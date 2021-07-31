@@ -1,60 +1,40 @@
-const socket = io();
-const msgText = document.querySelector('#msg')
-const btnSend = document.querySelector('#btn-send')
-const chatBox = document.querySelector('.chat-content')
-const displayMsg = document.querySelector('.message')
+const express = require('express');
+const bodyParser = require('body-parser');
+const socket = require('socket.io')
 
-let name;
-do{
-    uname = prompt('What is your name?')
-}while(!uname)
+const app = express();
+app.use(bodyParser.urlencoded({extended: false}));
+app.use(express.static('public'));
+app.set('view engine', 'ejs');
+var port = process.env.PORT || 3000;
 
-document.querySelector('#your-name').textContent = uname
-msgText.focus()
+//function sleepFor( sleepDuration ){
+  //var now = new Date().getTime();
+  //while(new Date().getTime() < now + sleepDuration){ /* do nothing */ } 
+//}
 
-btnSend.addEventListener('click', (e)=>{
-    e.preventDefault()
-    sendMsg(msgText.value)
-    msgText.value = '';
-    msgText.focus();
-    chatBox.scrollTop = chatBox.scrollHeight;
+//Render Index page
+app.get('/', (req, res) => {
+    res.render('index')
 })
 
-const sendMsg = message =>{
-    let msg = {
-        user: uname,
-        message: message.trim()
-    }
-
-    display(msg, 'you-message')
-
-    socket.emit('sendMessage', msg)
-}
-
-socket.on('sendToAll', msg=>{
-    display(msg, 'other-message')
-    chatBox.scrollTop = chatBox.scrollHeight;
+//Get username and roomname from form and pass it to room
+app.post('/room', (req, res) => {
+    roomname = req.body.roomname;
+    username = req.body.username;
+    res.redirect(`/room?username=${username}&roomname=${roomname}`)
 })
 
-const display = (msg, type) =>{
-    const msgDiv = document.createElement('div')
-    let className = type
-    msgDiv.classList.add(className, 'message-row')
-    let times = new Date().toLocaleTimeString()
+//Rooms
+app.get('/room', (req, res)=>{
+    res.render('room')
+})
 
-    let innerText = `
-    <div class="message-title">
-    
+//Start Server
+const server = app.listen(port, () => {
+    console.log(`Server Running on ${port}`)
+})
 
-😀 <span>${msg.user}</span>
-    </div>
-    <div class="message-text">
-        ${msg.message}
-    </div>
-    <div class="message-time">
-        ${times}
-    </div>
-    `;
-    msgDiv.innerHTML = innerText;
-    displayMsg.appendChild(msgDiv)
-}
+const io = socket(server);
+require('./utils/socket')(io);
+
